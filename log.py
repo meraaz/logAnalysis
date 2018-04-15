@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import psycopg2
 from datetime import datetime
 
@@ -5,14 +6,23 @@ from datetime import datetime
 DB_NAME = "news"
 
 
+# Function Connect
+def connect(database_name=DB_NAME):
+    try:
+        db = psycopg2.connect("dbname={}".format(database_name))
+        cursor = db.cursor()
+        return db, cursor
+    except RuntimeError:
+        print("Error Happened while connecting the DB")
+
+
 # Question 1 Query
 # What are the most popular three articles of all time ?
 def popular_posts():
     # connect to the database
-    db = psycopg2.connect(database=DB_NAME)
-    c = db.cursor()
+    db, cursor = connect()
     # The query to answer question 1
-    c.execute("""\
+    cursor.execute("""\
         select title , max(count) as maxValue
         from  (
             select articles.title , count(log.path)
@@ -25,20 +35,23 @@ def popular_posts():
             limit 3
         """)
     # fetch the result of question 1 query
-    posts = c.fetchall()
+    posts = cursor.fetchall()
     # close the DB connection
     db.close()
-    return posts
+    print("What are the most popular three articles of all time ?")
+    # Fetch the question one query result
+    for title, maxValue in posts:
+        # Format question three answer
+        print("\"", title, "\"", " - ", maxValue, " views")
 
 
 # Question 2 Query
 # Who are the most popular article author of all time ?
 def popular_authors():
     # connect to the database
-    db = psycopg2.connect(database=DB_NAME)
-    c = db.cursor()
+    db, cursor = connect()
     # The query to answer question 2
-    c.execute("""\
+    cursor.execute("""\
         select author, max(counter) as views
         from (
                 select authors.name as author, count(log.path) as counter
@@ -52,20 +65,23 @@ def popular_authors():
             order by views desc
         """)
     # fetch the result of question 2 query
-    posts = c.fetchall()
+    posts = cursor.fetchall()
     # close the DB connection
     db.close()
-    return posts
+    print("Who are the most popular article author of all time ?")
+    # Fetch the question two query result
+    for author, views in posts:
+        # Format question three answer
+        print(author, " - ", views, " views")
 
 
 # Question 3 Query
 # On Which days did more than 1% of requests lead to errors ?
 def requests_errors():
     # connect to the database
-    db = psycopg2.connect(database=DB_NAME)
-    c = db.cursor()
+    db, cursor = connect()
     # The query to answer question 3
-    c.execute("""\
+    cursor.execute("""\
         with total as (
                 select count(id) as total , time::timestamp::date as time
                 from log
@@ -89,32 +105,23 @@ def requests_errors():
                 limit 1
             """)
     # fetch the result of question 3 query
-    posts = c.fetchall()
+    posts = cursor.fetchall()
     # close the DB connection
     db.close()
-    return posts
+    print("On Which days did more than 1% of requests lead to errors ?")
+    # Fetch the question three query result
+    for day, percentage in posts:
+        # Format question three answer
+        print(datetime.strftime(day, '%b %d, %Y'), "-", percentage, "% errors")
+
 
 # Question one Answer
-print("What are the most popular three articles of all time ?")
-# Fetch the question one query result
-for title, maxValue in popular_posts():
-    # Format question three answer
-    print("\"", title, "\"", " - ", maxValue, " views")
-
+popular_posts()
 print("\n")
 
 # Question two Answer
-print("Who are the most popular article author of all time ?")
-# Fetch the question two query result
-for author, views in popular_authors():
-    # Format question three answer
-    print(author, " - ", views, " views")
-
+popular_authors()
 print("\n")
 
 # Question three Answer
-print("On Which days did more than 1% of requests lead to errors ?")
-# Fetch the question three query result
-for day, percentage in requests_errors():
-    # Format question three answer
-    print(datetime.strftime(day, '%b %d, %Y'), "-", percentage, "% errors")
+requests_errors()
